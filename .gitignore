@@ -23,3 +23,5 @@ go.work
 sqlxgen.yml
 
 /app
+
+.idea
