@@ -11,7 +11,7 @@
 
 ### instructions
 
-1. `make build` to all local images
+1. `make build` to all build local images
    1. `pgsync` an elt pipeline application in python
    2. `app` server application written in `golang`
 2. `make up` to bootstrap all applications
