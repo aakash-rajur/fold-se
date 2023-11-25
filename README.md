@@ -76,3 +76,5 @@ curl -X POST --location "http://localhost:8080/projects/search" \
 4. `internal/models`: database models
 5. `internal/routes`: configuring api (above) and http
 6. `internal/utils`: helper functions
+7. [pgsync](https://github.com/toluaina/pgsync/) reads from pg wal, 
+   transforms it as prescribed in `pg/schema.json` and finally dumps it into elasticsearch
