@@ -1,0 +1,50 @@
+[
+  {
+    "database": "app",
+    "index": "projects",
+    "nodes": {
+      "table": "projects",
+      "columns": [
+        "id",
+        "name",
+        "slug",
+        "description",
+        "created_at"
+      ],
+      "children": [
+        {
+          "label": "users",
+          "table": "users",
+          "columns": [
+            "id",
+            "name",
+            "created_at"
+          ],
+          "relationship": {
+            "type": "one_to_many",
+            "variant": "object",
+            "through_tables": [
+              "user_projects"
+            ]
+          }
+        },
+        {
+          "label": "hashtags",
+          "table": "hashtags",
+          "columns": [
+            "id",
+            "name",
+            "created_at"
+          ],
+          "relationship": {
+            "type": "one_to_many",
+            "variant": "object",
+            "through_tables": [
+              "project_hashtags"
+            ]
+          }
+        }
+      ]
+    }
+  }
+]
