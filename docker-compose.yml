@@ -1,0 +1,153 @@
+services:
+  pg:
+    image: bitnami/postgresql:16
+    environment:
+      POSTGRESQL_SHARED_PRELOAD_LIBRARIES: "pgaudit, pg_stat_statements"
+      POSTGRESQL_POSTGRES_PASSWORD: "$POSTGRESQL_POSTGRES_PASSWORD"
+      POSTGRESQL_USERNAME: "$POSTGRESQL_USERNAME"
+      POSTGRESQL_PASSWORD: "$POSTGRESQL_PASSWORD"
+      POSTGRESQL_DATABASE: "$POSTGRESQL_DATABASE"
+      SEED_FILENAME: "/tmp/seed.sql"
+    ports:
+      - "$POSTGRESQL_PORT:5432"
+    networks:
+      local:
+        aliases:
+          - pg
+    volumes:
+      - type: volume
+        source: pg
+        target: /bitnami/postgresql
+      - type: bind
+        source: pg/backup.sql
+        target: /tmp/seed.sql
+        read_only: true
+      - type: bind
+        source: pg/seed.sh
+        target: /docker-entrypoint-initdb.d/seed.sh
+        read_only: true
+      - type: bind
+        source: pg/postgres.conf
+        target: /opt/bitnami/postgresql/conf/conf.d/postgres.conf
+        read_only: true
+    healthcheck:
+      test: "PGUSER=$$POSTGRESQL_USERNAME PGHOST=localhost pg_isready -q"
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 30s
+  redis:
+    image: bitnami/redis:7.2
+    environment:
+      REDIS_PASSWORD: app
+    networks:
+      local:
+        aliases:
+          - redis
+    healthcheck:
+      test: "redis-cli -a $$REDIS_PASSWORD ping"
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 30s
+  es:
+    image: bitnami/elasticsearch:8
+    ports:
+      - "$ELASTICSEARCH_PORT:9200"
+    networks:
+      local:
+        aliases:
+          - es
+    volumes:
+      - type: volume
+        source: es
+        target: /bitnami/elasticsearch/data
+    healthcheck:
+      test: "curl localhost:9200/_cat/health"
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+  pgsync:
+    build:
+      context: pgsync
+      dockerfile: Dockerfile
+    sysctls:
+      - net.ipv4.tcp_keepalive_time=200
+      - net.ipv4.tcp_keepalive_intvl=200
+      - net.ipv4.tcp_keepalive_probes=5
+    environment:
+      SCHEMA_CONFIG: "/home/nobody/config.json"
+      USE_ASYNC: "True"
+      LOG_INTERVAL: "5"
+      POLL_INTERVAL: "1"
+      PG_HOST: "pg"
+      PG_PORT: "5432"
+      PG_USER: "postgres"
+      PG_PASSWORD: "$POSTGRESQL_POSTGRES_PASSWORD"
+      LOG_LEVEL: "INFO"
+      ELASTICSEARCH_HOST: "es"
+      ELASTICSEARCH_PORT: "9200"
+      ELASTICSEARCH_SCHEME: "http"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      REDIS_AUTH: "app"
+      ELASTICSEARCH: "true"
+      OPENSEARCH: "false"
+    volumes:
+      - type: bind
+        source: pg/schema.json
+        target: /home/nobody/config.json
+        read_only: true
+    networks:
+      local:
+        aliases:
+          - pgsync
+    depends_on:
+      pg:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      es:
+        condition: service_healthy
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "$PORT:$PORT"
+    networks:
+      local:
+        aliases:
+          - fold_se
+          - foldse
+    environment:
+      PORT: "$PORT"
+      POSTGRESQL_HOST: "pg"
+      POSTGRESQL_PORT: "5432"
+      POSTGRESQL_USERNAME: "$POSTGRESQL_USERNAME"
+      POSTGRESQL_PASSWORD: "$POSTGRESQL_PASSWORD"
+      POSTGRESQL_DATABASE: "$POSTGRESQL_DATABASE"
+      POSTGRESQL_SSLMODE: "disable"
+      ELASTICSEARCH_API_ENDPOINT: "http://es:9200"
+      GIN_MODE: "release"
+    depends_on:
+      pg:
+        condition: service_healthy
+      es:
+        condition: service_healthy
+    healthcheck:
+      test: "wget --no-verbose --tries=1 --spider http://localhost:$$PORT/health || exit 1"
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+
+networks:
+  local:
+    driver: bridge
+    attachable: true
+
+volumes:
+  pg: {}
+  es: {}
