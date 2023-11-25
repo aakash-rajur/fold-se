@@ -1,0 +1,90 @@
+### project search 1
+
+GET http://localhost:9200/projects/_search?pretty
+Content-Type: application/json
+Accept: application/json
+
+>> project-search-1.json
+
+### project search by user
+GET http://localhost:9200/projects/_search?pretty
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": {
+    "match": {
+      "users.name": "Fern Mckinney"
+    }
+  }
+}
+
+### project search by hashtag
+GET http://localhost:9200/projects/_search?pretty
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": {
+    "match": {
+      "hashtags.name": "alarm"
+    }
+  }
+}
+
+### project search by full text description
+GET http://localhost:9200/projects/_search?pretty
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "description": {
+              "query": "87b854",
+              "fuzziness": 2
+            }
+          }
+        },
+        {
+          "match": {
+            "slug": {
+              "query": "87b854",
+              "fuzziness": 2
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+### project search
+POST http://localhost:8080/projects/search
+Content-Type: application/json
+Accept: application/json
+
+{
+  "description": "dumy",
+  "fuzziness": 2
+}
+
+### create project
+POST http://localhost:8080/projects
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "p1",
+  "description": "awesome description",
+  "users": [
+    "john doe",
+    "jane doe"
+  ],
+  "hashtags": ["h1", "h2"]
+}
+
+
