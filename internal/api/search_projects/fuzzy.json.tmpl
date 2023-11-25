@@ -1,0 +1,20 @@
+{{- $fuzziness := .Fuzziness }}
+{{- $fields := .Fields }}
+{
+  "query": {
+    "bool": {
+      "should": [
+        {{- range $i, $f := $fields }}
+        {
+          "match": {
+            "{{ $f.Name }}": {
+              "query": "{{ $f.Value }}",
+              "fuzziness": {{$fuzziness}}
+            }
+          }
+        }{{ if not (isLast $i $fields) }},{{ end }}
+        {{- end }}
+      ]
+    }
+  }
+}
